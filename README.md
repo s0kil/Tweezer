@@ -16,8 +16,8 @@
 Put simply, Tweezer is a tool for identifying function names in stripped binaries and un-named functions. Using a model/ dataset trained of broad or specific binaries Tweezer can provide a function name for a function that is close to the unamed function - using word2vec and cosine distance.
 
 * **🔬 Function Finding:** Take a function with no name/ unknown functionality and run it through the model. Tweezer will retrieve the names of similar function's it's been trained against.
-* **🤖 Specific Training and extending:** Tweezer is easily extendable and trainable off any binaries supported in Ghidra's decompilation.
-* **🛠️ Ghidra enabled:** Tweezer uses Ghidra headless to enable decompilation of functions!
+* **🤖 Specific Training and Extending:** Tweezer is easily extendable and trainable off any binaries supported in Ghidra's decompilation.
+* **🛠️ Ghidra Enabled:** Tweezer uses Ghidra headless to enable decompilation of functions!
 
 # ⚙️ Setup
 
