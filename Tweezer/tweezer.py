@@ -118,10 +118,11 @@ def entry():
                 closest_function = tweezer.find_closest_functions(file_path, 1)
 
                 if isinstance(closest_function, list):
-                    if "function_name" in closest_function[0]:
+                    if len(closest_function) > 0:
+                        if "function_name" in closest_function[0]:
 
-                        closest_function = closest_function[0]["function_name"]
-                        function_map[function_name] = closest_function
+                            closest_function = closest_function[0]["function_name"]
+                            function_map[function_name] = closest_function
 
         print("\n\n")
         print("=" * 20)
