@@ -1,7 +1,9 @@
+import concurrent
 import hashlib
 import shutil
 import subprocess
 import tempfile
+from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
 from tqdm import tqdm
@@ -78,6 +80,7 @@ def save_all_functions_to_files():
     
     # Iterate through all functions
     for function in listing.getFunctions(True):
+        function_name = function.getName()
         save_function_c_code(function, output_directory)
 
 # Run the main function
@@ -146,17 +149,22 @@ save_all_functions_to_files()
         with tempfile.TemporaryDirectory() as tmpdirname:
             script_path = Path(tmpdirname, "decom_script.py").resolve()
             self.generate_ghidra_decom_script(decom_folder, script_path)
-            headless_command = self._construct_ghidra_headless_command(path_to_binary, script_path, binary_hash)
-
-            self._execute_blocking_command(headless_command)
+            self._construct_ghidra_headless_command(path_to_binary, script_path, binary_hash)
 
     def decompile_all_binaries_in_folder(self, path_to_folder, decom_folder):
+        # Create a list to store all the file paths
+        files_to_process = [file_path for file_path in Path(path_to_folder).iterdir() if file_path.is_file()]
 
-        for file_path in tqdm(Path(path_to_folder).iterdir(),
-                              desc="Decompiling functions in binaries from {}".format(path_to_folder)):
-            # checking if it is a file
-            if file_path.is_file():
-                self.decompile_binaries_functions(file_path, decom_folder)
+        # Use a ProcessPoolExecutor to execute the decompilation in parallel
+        with ProcessPoolExecutor() as executor:
+            # Create a list of futures
+            futures = [executor.submit(self.decompile_binaries_functions, file_path, decom_folder) for file_path in
+                       files_to_process]
+
+            # Use tqdm to show progress
+            for _ in tqdm(concurrent.futures.as_completed(futures), total=len(files_to_process),
+                          desc="Decompiling functions in binaries from {}".format(path_to_folder)):
+                pass
 
 
 if __name__ == '__main__':

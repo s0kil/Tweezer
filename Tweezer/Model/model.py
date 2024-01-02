@@ -1,117 +1,91 @@
 import pickle
-import re
 from pathlib import Path
 
 import numpy as np
 from gensim.models import Word2Vec
-from nltk.tokenize import word_tokenize
-from tensorflow.keras.preprocessing.sequence import pad_sequences
-from tqdm import tqdm
+from scipy.spatial.distance import cosine
 
 
-class Model():
+class Model:
+    vectors = []
+    vectors_path = ""
 
-    def __init__(self, model_path="TweezerMDL"):
-        self.model_path = model_path
-        self._list_of_vector_information = []
+    def __init__(self, vectors_path="TweezerMDL", vector_size=100):
+        self.vectors_path = vectors_path
 
-    def _get_code_from_decom_file(self, path_to_file):
+        if Path(vectors_path).is_file():
+            self.vectors = self.read_vector_file(vectors_path)
 
-        with open(path_to_file, "r") as file:
-            code = file.read()
-            # Define a regular expression pattern to match the function body
-            pattern = re.compile(r'\{([^}]*)\}', re.DOTALL)
+    def learn(self, dict_to_add_to_dataset):
+        dict_with_vector = self.process_code_and_append_vector(dict_to_add_to_dataset)
+        self.vectors.append(dict_with_vector)
+        self.save_vector_file(self.vectors, self.vectors_path)
 
-            # Find the first match in the code
-            match = pattern.search(code)
+    def save_vector_file(self, vectors, vectors_path):
+        with open(vectors_path, 'wb') as file:
+            pickle.dump(vectors, file)
 
-            if match:
-                # Extract and return the function body
-                return match.group(1).strip()
-
-            return None
-
-    def function_to_vec(self, code, max_length=100):
-        # Preprocess the code: remove non-alphanumeric characters and split into words
-        clean_code = re.sub(r'[^a-zA-Z0-9 ]', '', code)
-        tokenized_code = word_tokenize(clean_code.lower())
-
-        # Define and train the Word2Vec model
-        model = Word2Vec([tokenized_code], vector_size=100, window=5, min_count=1, workers=4)
-
-        # Convert the code snippet to vectors
-        vectorized_code = [model.wv[word] for word in tokenized_code if word in model.wv]
-
-        # Pad or truncate the vectors to the specified maximum length
-        vectorized_code = \
-        pad_sequences([vectorized_code], maxlen=max_length, dtype='float32', padding='post', truncating='post')[0]
-
-        return vectorized_code
-
-    def _function_file_to_vec(self, path):
-        code = self._get_code_from_decom_file(path)
-        return self.function_to_vec(code)
-
-    def save_model(self):
-        with open(self.model_path, 'wb') as file:
-            pickle.dump(self._list_of_vector_information, file)
-
-    def read_model(self):
-        with open(self.model_path, 'rb') as file:
+    def read_vector_file(self, vector_path):
+        with open(vector_path, 'rb') as file:
             return pickle.load(file)
 
-    def get_vectors_from_files(self, decom_files_dir):
+    def process_code_and_append_vector(self, data):
+        """
+        Process the given code data using Word2Vec to generate a fixed-size vector and append it to the data dict.
 
-        if Path(self.model_path).is_file():
-            self._list_of_vector_information = self.read_model()
+        :param data: A dictionary in the format {"name": <string>, "code": <list of strings>}
+        :return: The original dictionary with an added key "vector" containing the Word2Vec vector of the code.
+        """
+        # Constants
+        VECTOR_SIZE = 500
 
-        for file_path in tqdm(Path(decom_files_dir).iterdir(),
-                              desc="Getting vectors from files in {}".format(decom_files_dir)):
+        # Extract code lines from the data
+        code_lines = data["code"]
 
-            binary_name, function_name, *epoc = Path(file_path).name.split("__")
+        # Tokenize the code lines
+        tokens = [line.split() for line in code_lines]
 
-            # No value in vectorising functions that don't have names
-            if str(function_name).startswith("FUN") or str(function_name).startswith("thunk"):
-                continue
+        # Train a Word2Vec model
+        model = Word2Vec(tokens, vector_size=VECTOR_SIZE, window=5, min_count=1, workers=4)
 
-            combo_exists = any(
-                item["function_name"] == function_name and item["binary"] == binary_name for item in
-                self._list_of_vector_information)
+        # Generate vectors for each token and aggregate them
+        vectors = np.zeros((VECTOR_SIZE,))
+        for token_line in tokens:
+            for token in token_line:
+                if token in model.wv:
+                    vectors += model.wv[token]
 
-            if not combo_exists:
-                self._list_of_vector_information.append(
-                    {"function_name": function_name, "vector": self._function_file_to_vec(file_path),
-                     "binary": binary_name})
+        # Average the vectors
+        if len(tokens) > 0:
+            vectors /= len(tokens)
 
-        self.save_model()
+        # Pad or truncate the vector to ensure it's of size VECTOR_SIZE
+        if len(vectors) > VECTOR_SIZE:
+            vectors = vectors[:VECTOR_SIZE]
+        elif len(vectors) < VECTOR_SIZE:
+            vectors = np.pad(vectors, (0, VECTOR_SIZE - len(vectors)), 'constant')
 
-    def find_similar_vectors(self, vector_to_compare, number_of_closest=10):
-        # Convert the list of vectors to a 2D NumPy array
-        vector_list = [item['vector'] for item in self._list_of_vector_information]
+        # Append the vector to the data dictionary
+        data["vector"] = vectors
 
-        if len(vector_list) <= 0:
-            raise Exception("Model contains 0 vectors - extend model!")
+        return data
 
-        vectors_array = np.array(vector_list)
+    def find_closest_code(self, dataset, target):
+        """
+        Find the code in the dataset closest to the target based on their vectors and add a 'distance' field to each.
 
-        # Ensure new_vector is a 1D array or has a compatible shape
-        new_vector = np.squeeze(vector_to_compare)
+        :param dataset: A list of dictionaries, each with a 'vector' key among others.
+        :param target: A dictionary with a 'vector' key.
+        :return: The dataset with an added 'distance' field in each dictionary indicating closeness to the target.
+        """
+        target_vector = target.get('vector')
 
-        # Compute the cosine similarity between the new vector and all vectors in the list
-        similarities = np.dot(vectors_array, new_vector) / (
-                np.linalg.norm(vectors_array, axis=1) * np.linalg.norm(new_vector))
+        for data in dataset:
+            data_vector = data.get('vector')
+            # Calculate cosine distance between vectors, lower means closer
+            data['distance'] = cosine(data_vector, target_vector)
 
-        # Combine similarities with function names
-        function_similarities = zip([item['function_name'] for item in self._list_of_vector_information], similarities)
-
-        # Sort by similarity and get the top 10
-        sorted_function_similarities = sorted(function_similarities, key=lambda x: x[1], reverse=True)[
-                                       :number_of_closest]
-
-        # Extract function names
-        closest_function_names = [item[0] for item in sorted_function_similarities]
-
-        return closest_function_names
+        return dataset
 
 
 if __name__ == '__main__':

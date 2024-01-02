@@ -1,4 +1,5 @@
 import argparse
+import re
 import tempfile
 from pathlib import Path
 from pprint import pprint
@@ -13,7 +14,7 @@ class Tweezer():
         self.model = None
         self.model_path = model_path
 
-    def setup_model(self, list_of_binary_folders):
+    def train(self, list_of_binary_folders):
         self.extend_model_training(list_of_binary_folders)
 
     def extend_model_training(self, list_of_binary_folders):
@@ -21,12 +22,59 @@ class Tweezer():
         self.model = Model(self.model_path)
         with tempfile.TemporaryDirectory() as decom_output:
             trainer._generate_decompiled_functions_from_binaries(list_of_binary_folders, decom_output)
-            self.model.get_vectors_from_files(decom_output)
 
-    def find_closest_functions(self, function_file, number_of_closest =10):
+            for file_path in Path(decom_output).iterdir():
+                binary_name, function_name, *epoc = Path(file_path).name.split("__")
+
+                if "FUN" not in function_name:
+                    print("Getting vectors for {}".format(file_path))
+                    dataset = self.get_data_dict_from_file(file_path)
+                    if "code" in dataset:
+                        self.model.learn(dataset)
+                    else:
+                        print("Couldn't train off {}".format(file_path))
+
+    def _sort_by_distance(self, dataset):
+        """
+        Sort the dataset by the 'distance' field from closest to farthest.
+
+        :param dataset: A list of dictionaries, each with a 'distance' key.
+        :return: The sorted dataset based on the 'distance' field.
+        """
+        return sorted(dataset, key=lambda x: x['distance'])
+
+    def _get_code_from_decom_file(self, path_to_file):
+        with open(path_to_file, "r") as file:
+            code = file.read()
+            pattern = re.compile(r'\{([^}]*)\}', re.DOTALL)
+            match = pattern.search(code)
+
+            if match.group(1).strip():
+                return match.group(1).strip()
+            else:
+                return code
+
+    def get_data_dict_from_file(self, file_path):
+        function_dict = {}
+        function_dict["binary_name"], function_dict["function_name"], *epoc = Path(file_path).name.split("__")
+        if "FUN" not in function_dict["function_name"]:
+            function_dict["code"] = self._get_code_from_decom_file(file_path)
+            return function_dict
+        else:
+            return function_dict
+
+    def find_closest_functions(self, function_file, number_of_closest=10):
         self.model = Model(self.model_path)
-        self.model.find_similar_vectors(
-            self.model._function_file_to_vec(function_file),number_of_closest)
+
+        function_dict = self.get_data_dict_from_file(function_file)
+        function_dict = self.model.process_code_and_append_vector(function_dict)
+
+        if "vector" not in function_dict:
+            return "N/A"
+
+        dataset = self.model.find_closest_code(self.model.vectors, function_dict)
+
+        return self._sort_by_distance(dataset)[:number_of_closest]
 
 
 def parse_args():
@@ -36,11 +84,11 @@ def parse_args():
     # Model path argument (always required)
     parser.add_argument('--model-path', required=True, help='Path to the Tweezer model file')
     # Binary locations argument (accepts multiple values)
-    parser.add_argument('--binary-locations', nargs='+', help='List of binary locations to train/extend training off')
+    parser.add_argument('--train', nargs='+', help='List of binary locations to train/extend training off')
 
     # Create a mutually exclusive group for --function and --binary
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--function', help='Path to a decompiled C file for analysis')
+    group.add_argument('--single-function', help='Path to a decompiled C file for analysis')
     group.add_argument('--binary', help='Path to binary to produce function name map from')
 
     args = parser.parse_args()
@@ -52,9 +100,9 @@ def entry():
     args = parse_args()
 
     # compare a decompiled function with vectors
-    if args.function:
+    if args.single_function:
         tweezer = Tweezer(args.model_path)
-        tweezer.find_closest_functions(args.function)
+        print(tweezer.find_closest_functions(args.function))
 
     # Build a reference map of all functions in a binary
     elif args.binary:
@@ -66,16 +114,24 @@ def entry():
 
             for file_path in Path(tmpdirname).iterdir():
                 binary_name, function_name, *epoc = Path(file_path).name.split("__")
-                closest_function = tweezer.find_closest_functions(args.function,1)
+
+                closest_function = tweezer.find_closest_functions(file_path, 1)
+                closest_function = closest_function[0]["function_name"]
+
+
                 function_map[function_name] = closest_function
 
+        print("\n\n")
+        print("=" * 20)
         pprint(function_map)
+        print("=" * 20)
+        print("\n\n")
 
     # Train / re train the model
-    elif args.binary_locations:
-        list_of_binary_folders = args.binary_locations
+    elif args.train:
+        list_of_binary_folders = args.train
         tweezer = Tweezer(args.model_path)
-        tweezer.setup_model(list_of_binary_folders)
+        tweezer.train(list_of_binary_folders)
 
 
 if __name__ == '__main__':
