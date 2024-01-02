@@ -13,19 +13,11 @@
 
 </div>
 
-* **💡 Practical:** Tweezer aids in navigating compiled code and predicting function names in stripped binaries.
-* **🛠️ Ghidra Integration:** Tweezer utilises Ghidra for decompilation.
-* **🤖 Machine Learning:** Utilising Word2Vec to build comparisons between functions.
+Put simply, Tweezer is a tool for identifying function names in stripped binaries and un-named functions. Using a model/ dataset trained of broad or specific binaries Tweezer can provide a function name for a function that is close to the unamed function - using word2vec and cosine distance.
 
-Word2Vec is a widely used technique in natural language processing (NLP) for converting words into dense vectors that
-capture semantic relationships between words. The underlying idea is rooted in the distributional hypothesis, which
-poses that words appearing in similar contexts tend to have similar meanings. In the context of Tweezer, Word2Vec is
-employed to vectorize decompiled code snippets. During the training phase, the model learns to represent words (in this
-case, decompiled pseudo C) as vectors in a continuous vector space. These vectors preserve the syntactic and semantic
-information of the corresponding words, enabling the model to understand relationships between different functions based
-on their co-occurrence patterns. Consequently, when Tweezer encounters a decompiled function, it uses the trained
-Word2Vec model to convert the code into vectors. By comparing these vectors, Tweezer can identify and retrieve functions
-with similar code structures, aiding in the task of finding the closest functions in terms of code similarity.
+* **🔬 Function Finding:** Take a function with no name/ unknown functionality and run it through the model. Tweezer will retrieve the names of similar function's it's been trained against.
+* **🤖 Specific Training and extending:** Tweezer is easily extendable and trainable off any binaries supported in Ghidra's decompilation.
+* **🛠️ Ghidra enabled:** Tweezer uses Ghidra headless to enable decompilation of functions!
 
 # ⚙️ Setup
 
@@ -62,6 +54,17 @@ tweezer --model-path <model-path> --function <path-to-decompiled-function>
 ```bash
 tweezer --model-path <model-path> --binary <path-to-binary>
 ```
+
+# 🤖 What is Word2Vec?
+Word2Vec is a widely used technique in natural language processing (NLP) for converting words into dense vectors that
+capture semantic relationships between words. The underlying idea is rooted in the distributional hypothesis, which
+poses that words appearing in similar contexts tend to have similar meanings. In the context of Tweezer, Word2Vec is
+employed to vectorize decompiled code snippets. During the training phase, the model learns to represent words (in this
+case, decompiled pseudo C) as vectors in a continuous vector space. These vectors preserve the syntactic and semantic
+information of the corresponding words, enabling the model to understand relationships between different functions based
+on their co-occurrence patterns. Consequently, when Tweezer encounters a decompiled function, it uses the trained
+Word2Vec model to convert the code into vectors. By comparing these vectors (the first 500, and padding if less), Tweezer can identify and retrieve functions
+with similar code structures, aiding in the task of finding the closest functions in terms of code similarity.
 
 # 🙏 Contributions
 
