@@ -60,7 +60,6 @@ class Tweezer():
         function_dict["code"] = self._get_code_from_decom_file(file_path)
         return function_dict
 
-
     def find_closest_functions(self, function_file, number_of_closest=10):
         self.model = Model(self.model_path)
 
@@ -104,9 +103,14 @@ def entry():
     # compare a decompiled function with vectors
     if args.single_function:
 
+        if not Path(args.single_function).is_file():
+            raise Exception("Provided function file '{}' is not a file or does not exist, please provide a valid "
+                            "function file that contains a functions decompilation!")
+
         if not Path(args.model).is_file():
             raise Exception(
-                "Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve the example model from Github.")
+                "Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve "
+                "the example model from Github.")
 
         tweezer = Tweezer(args.model_path)
         print(tweezer.find_closest_functions(args.function))
@@ -115,10 +119,12 @@ def entry():
     elif args.binary:
 
         if not Path(args.binary).is_file():
-            raise Exception("Provided binary '{}' is not a file or does not exist, please provide a valid binary that is decompilable by Ghidra!")
+            raise Exception("Provided binary '{}' is not a file or does not exist, please provide a valid binary that "
+                            "is decompilable by Ghidra!")
 
         if not Path(args.model_path).is_file():
-            raise Exception("Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve the example model from Github.")
+            raise Exception(
+                "Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve the example model from Github.")
 
         function_map = {}
         tweezer = Tweezer(args.model_path)
@@ -134,7 +140,6 @@ def entry():
                 if isinstance(closest_function, list):
                     if len(closest_function) > 0:
                         if "function_name" in closest_function[0]:
-
                             closest_function_name = closest_function[0]["function_name"]
                             closest_function_binary = closest_function[0]["binary_name"]
                             function_map[function_name] = [closest_function_name, closest_function_binary]
