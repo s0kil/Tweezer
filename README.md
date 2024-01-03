@@ -13,7 +13,7 @@
 
 </div>
 
-Put simply, Tweezer is a tool for identifying function names in stripped binaries and un-named functions. Using a model/ dataset trained of broad or specific binaries Tweezer can provide a function name for a function that is close to the unamed function - using word2vec and cosine distance.
+Put simply, Tweezer is a tool for identifying function names in stripped binaries and un-named functions. Using a model/dataset trained on broad or specific binaries Tweezer can provide a function name for a function that is close to the unamed function - using word2vec and cosine distance.
 
 * **🔬 Function Finding:** Take a function with no name/ unknown functionality and run it through the model. Tweezer will retrieve the names of similar function's it's been trained against.
 * **🤖 Specific Training and Extending:** Tweezer is easily extendable and trainable off any binaries supported in Ghidra's decompilation.
@@ -24,7 +24,7 @@ Put simply, Tweezer is a tool for identifying function names in stripped binarie
 ## Dependancies
 
 Tweezer requires [Ghidra](https://ghidra-sre.org/) to be installed, and for ```analyzeHeadless``` to be on your path. If
-it is not on your path Tweezer will request on run where the binary is located. To install all other dependancies use
+it is not on your path Tweezer will request on run where the binary is located. To install all other dependencies use
 the ```requirements.txt``` file, with:
 
 ```
@@ -51,13 +51,13 @@ python3 tweezer.py --model-path <model-path> --function <path-to-decompiled-func
 ```
 
 ### Building Function Name Map
-This entrypoint can be used to point to a binary on disc to decompile and build a map of all function names against their closest names in the model. **This is the reccomended entrypoint**.
+This entrypoint can be used to point to a binary on disc to decompile and build a map of all function names against their closest names in the model. **This is the recommended entrypoint**.
 ```bash
 python3 tweezer.py --model-path <model-path> --binary <path-to-binary>
 ```
 
 ## Example
-Below is an example output when running the aformentioned example model against the unlabelled [7zr binary found hear](https://github.com/polaco1782/linux-static-binaries/tree/master).
+Below is an example output when running the aforementioned example model against the unlabelled [7zr binary found hear](https://github.com/polaco1782/linux-static-binaries/tree/master).
 
 ```bash
 python3 tweezer.py --model-path example_tweezer.mdl --binary 7zr
