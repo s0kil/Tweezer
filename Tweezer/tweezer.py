@@ -67,6 +67,10 @@ class Tweezer():
         self.model = Model(self.model_path)
 
         function_dict = self.get_data_dict_from_file(function_file)
+
+        if "code" not in function_dict:
+            return "N/A"
+
         function_dict = self.model.process_code_and_append_vector(function_dict)
 
         if "vector" not in function_dict:
@@ -135,6 +139,8 @@ def entry():
 
                             closest_function = closest_function[0]["function_name"]
                             function_map[function_name] = closest_function
+                else:
+                    print("Invalid closest function returned!")
 
         print("\n\n")
         print("=" * 20)
