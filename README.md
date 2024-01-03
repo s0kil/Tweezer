@@ -35,7 +35,9 @@ python setup.py install
 ## Running
 
 Depending on if you already have a trained model/ map of vectors you may decide to run Tweezer in one of two ways,
-either 1) to train a new model/ extend an existing model or 2) to run Tweezer against a decompiled function or binary.
+either 1) to train a new model/ extend an existing model or 2) to run Tweezer against a decompiled function or binary. 
+
+An example model for testing can be found in the Github repo at [example_tweezer.mdl](https://github.com/user1342/Tweezer/blob/main/example_tweezer.mdl). This model should not be used in production as it has only been trained off a single binary from [Cisco Talos Binary Function Similarity](https://github.com/Cisco-Talos/binary_function_similarity).
 
 ### Training/ Extending the Model
 
