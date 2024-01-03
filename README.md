@@ -40,21 +40,47 @@ either 1) to train a new model/ extend an existing model or 2) to run Tweezer ag
 An example model for testing can be found in the Github repo at [example_tweezer.mdl](https://github.com/user1342/Tweezer/blob/main/example_tweezer.mdl). This model should not be used in production as it has only been trained off a single binary from [Cisco Talos Binary Function Similarity](https://github.com/Cisco-Talos/binary_function_similarity).
 
 ### Training/ Extending the Model
-
+Use this entrypoint when training a new or extending a model. A model file is a pickled list of vectors the word2vec model has outputted. Because of this, existing 'models' can be extended endlessly without the need to start from scratch.
 ```bash
 tweezer --model-path <model-path> --train <binary-folder-1> <binary-folder-2>...
 ```
 
 ### Finding Closest Functions
-
+This entrypoint can be used and pointed to a file on disc that contains the decompilation of a function.
 ```bash
 tweezer --model-path <model-path> --function <path-to-decompiled-function>
 ```
 
 ### Building Function Name Map
-
+This entrypoint can be used to point to a binary on disc to decompile and build a map of all function names against their closest names in the model. **This is the reccomended entrypoint**.
 ```bash
 tweezer --model-path <model-path> --binary <path-to-binary>
+```
+
+## Example
+Below is an example output when running the aformentioned example model against the unlabelled [7zr binary found hear](https://github.com/polaco1782/linux-static-binaries/tree/master).
+
+```bash
+tweezer --model-path example_tweezer.mdl --binary 7zr
+```
+
+```
+====================
+{'FUN_000100f4': ['TS_ACCURACY_get_seconds',
+                  'libcrypto.so.1.0.0_TP-Link_Deco-M4_1.0.2d_mips32'],
+ 'FUN_00010100': ['policy_node_match',
+                  'libcrypto.so.1.0.0_TP-Link_Deco-M4_1.0.2d_mips32'],
+ 'FUN_00010124': ['OCSP_resp_find_status',
+                  'libcrypto.so.1.0.0_TP-Link_Deco-M4_1.0.2d_mips32'],
+ 'FUN_0001014c': ['bn_mul_mont',
+                  'libcrypto.so.1.0.0_TP-Link_Deco-M4_1.0.2d_mips32'],
+ 'FUN_000101d8': ['RSA_padding_check_PKCS1_type_2',
+                  'libcrypto.so.1.0.0_TP-Link_Deco-M4_1.0.2d_mips32'],
+ 'FUN_000102bc': ['X509_NAME_get_index_by_OBJ',
+                  'libcrypto.so.1.0.0_TP-Link_Deco-M4_1.0.2d_mips32'],
+ 'FUN_000102e0': ['RIPEMD160_Transform',
+                  'libcrypto.so.1.0.0_TP-Link_Deco-M4_1.0.2d_mips32'],
+...
 ```
 
 # 🤖 What is Word2Vec?
