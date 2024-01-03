@@ -29,7 +29,6 @@ the ```requirements.txt``` file, with:
 
 ```
 pip install -r requirements.txt
-python setup.py install
 ```
 
 ## Running
@@ -42,26 +41,26 @@ An example model for testing can be found in the Github repo at [example_tweezer
 ### Training/ Extending the Model
 Use this entrypoint when training a new or extending a model. A model file is a pickled list of vectors the word2vec model has outputted. Because of this, existing 'models' can be extended endlessly without the need to start from scratch.
 ```bash
-tweezer --model-path <model-path> --train <binary-folder-1> <binary-folder-2>...
+python3 tweezer.py --model-path <model-path> --train <binary-folder-1> <binary-folder-2>...
 ```
 
 ### Finding Closest Functions
 This entrypoint can be used and pointed to a file on disc that contains the decompilation of a function.
 ```bash
-tweezer --model-path <model-path> --function <path-to-decompiled-function>
+python3 tweezer.py --model-path <model-path> --function <path-to-decompiled-function>
 ```
 
 ### Building Function Name Map
 This entrypoint can be used to point to a binary on disc to decompile and build a map of all function names against their closest names in the model. **This is the reccomended entrypoint**.
 ```bash
-tweezer --model-path <model-path> --binary <path-to-binary>
+python3 tweezer.py --model-path <model-path> --binary <path-to-binary>
 ```
 
 ## Example
 Below is an example output when running the aformentioned example model against the unlabelled [7zr binary found hear](https://github.com/polaco1782/linux-static-binaries/tree/master).
 
 ```bash
-tweezer --model-path example_tweezer.mdl --binary 7zr
+python3 tweezer.py --model-path example_tweezer.mdl --binary 7zr
 ```
 
 ```
