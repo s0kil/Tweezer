@@ -101,11 +101,23 @@ def entry():
 
     # compare a decompiled function with vectors
     if args.single_function:
+
+        if not Path(args.model).is_file():
+            raise Exception(
+                "Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve the example model from Github.")
+
         tweezer = Tweezer(args.model_path)
         print(tweezer.find_closest_functions(args.function))
 
     # Build a reference map of all functions in a binary
     elif args.binary:
+
+        if not Path(args.binary).is_file():
+            raise Exception("Provided binary '{}' is not a file or does not exist, please provide a valid binary that is decompilable by Ghidra!")
+
+        if not Path(args.model_path).is_file():
+            raise Exception("Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve the example model from Github.")
+
         function_map = {}
         tweezer = Tweezer(args.model_path)
         with tempfile.TemporaryDirectory() as tmpdirname:
