@@ -57,11 +57,9 @@ class Tweezer():
     def get_data_dict_from_file(self, file_path):
         function_dict = {}
         function_dict["binary_name"], function_dict["function_name"], *epoc = Path(file_path).name.split("__")
-        if "FUN" not in function_dict["function_name"]:
-            function_dict["code"] = self._get_code_from_decom_file(file_path)
-            return function_dict
-        else:
-            return function_dict
+        function_dict["code"] = self._get_code_from_decom_file(file_path)
+        return function_dict
+
 
     def find_closest_functions(self, function_file, number_of_closest=10):
         self.model = Model(self.model_path)
@@ -137,8 +135,9 @@ def entry():
                     if len(closest_function) > 0:
                         if "function_name" in closest_function[0]:
 
-                            closest_function = closest_function[0]["function_name"]
-                            function_map[function_name] = closest_function
+                            closest_function_name = closest_function[0]["function_name"]
+                            closest_function_binary = closest_function[0]["binary_name"]
+                            function_map[function_name] = [closest_function_name, closest_function_binary]
                 else:
                     print("Invalid closest function returned!")
 
