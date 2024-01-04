@@ -11,6 +11,8 @@ setup(
         'scikit-learn',
         'tqdm',
         'tensorflow',
+        'tqdm',
+        'scipy'
     ],
     entry_points={
         'console_scripts': [
