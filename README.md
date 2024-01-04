@@ -7,6 +7,8 @@
 <div align="center">
 
 ![GitHub contributors](https://img.shields.io/github/contributors/user1342/Tweezer)
+![GitHub Repo stars](https://img.shields.io/github/stars/user1342/Tweezer?style=social)
+![GitHub watchers](https://img.shields.io/github/watchers/user1342/Tweezer?style=social)
 ![GitHub last commit](https://img.shields.io/github/last-commit/user1342/Tweezer)
 <br>
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/P5P7C2MM6)
