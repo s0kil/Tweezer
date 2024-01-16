@@ -1,0 +1,24 @@
+# Python Venv
+bin
+include
+lib
+lib64
+pyvenv.cfg
+Tweezer.egg-info
+build
+
+# Training Binaries
+firmware_binaries
+
+# Ghidra Decompilations
+decompilations
+
+# Ghidra Files
+.symbols
+.ghidra_projects
+
+# Target Binary Directory
+targets
+
+# Target Model
+firmware_binaries.mdl

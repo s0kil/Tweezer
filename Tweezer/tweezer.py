@@ -1,15 +1,17 @@
 import argparse
 import re
+import os
 import tempfile
 from pathlib import Path
 from pprint import pprint
 
 from Tweezer.GhidraBridge.ghidra_bridge import GhidraBridge
 from Tweezer.Model.model import Model
+
 from Tweezer.Training.trainer import Trainer
 
 
-class Tweezer():
+class Tweezer:
     def __init__(self, model_path="TweezerMDL"):
         self.model = None
         self.model_path = model_path
@@ -18,21 +20,32 @@ class Tweezer():
         self.extend_model_training(list_of_binary_folders)
 
     def extend_model_training(self, list_of_binary_folders):
-        trainer = Trainer()
+        # trainer = Trainer()
         self.model = Model(self.model_path)
-        with tempfile.TemporaryDirectory() as decom_output:
-            trainer._generate_decompiled_functions_from_binaries(list_of_binary_folders, decom_output)
+        # with tempfile.TemporaryDirectory() as decom_output:
+        # trainer._generate_decompiled_functions_from_binaries(list_of_binary_folders, decom_output)
 
-            for file_path in Path(decom_output).iterdir():
-                binary_name, function_name, *epoc = Path(file_path).name.split("__")
+        decompilations_output_dir = (
+            "/home/danielsokil/Lab/user1342/Tweezer/decompilations"
+        )
 
-                if "FUN" not in function_name:
-                    print("Getting vectors for {}".format(file_path))
-                    dataset = self.get_data_dict_from_file(file_path)
-                    if "code" in dataset:
-                        self.model.learn(dataset)
-                    else:
-                        print("Couldn't train off {}".format(file_path))
+        for file_path in Path(decompilations_output_dir).rglob("*.*"):
+            function_name, *epoc = Path(file_path).name.split("-")
+
+            if "FUN" not in function_name:
+                print("Getting vectors for {}".format(file_path))
+
+                function_dict = {}
+                binary_name, binary_hash = Path(os.path.dirname(file_path)).name.split("_")
+                function_dict["binary_name"] = binary_name
+                function_name, *epoc = Path(file_path).name.split("-")
+                function_dict["function_name"] = function_name
+                function_dict["code"] = self._get_code_from_decom_file(file_path)
+
+                if "code" in function_dict:
+                    self.model.learn(function_dict)
+                else:
+                    print("Couldn't train off {}".format(file_path))
 
     def _sort_by_distance(self, dataset):
         """
@@ -41,12 +54,12 @@ class Tweezer():
         :param dataset: A list of dictionaries, each with a 'distance' key.
         :return: The sorted dataset based on the 'distance' field.
         """
-        return sorted(dataset, key=lambda x: x['distance'])
+        return sorted(dataset, key=lambda x: x["distance"])
 
     def _get_code_from_decom_file(self, path_to_file):
         with open(path_to_file, "r") as file:
             code = file.read()
-            pattern = re.compile(r'\{([^}]*)\}', re.DOTALL)
+            pattern = re.compile(r"\{([^}]*)\}", re.DOTALL)
             match = pattern.search(code)
 
             if match.group(1).strip():
@@ -80,17 +93,28 @@ class Tweezer():
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Command-line interface Tweezer, binary analysis unknown function name finder.')
+        description="Command-line interface Tweezer, binary analysis unknown function name finder."
+    )
 
     # Model path argument (always required)
-    parser.add_argument('--model-path', required=True, help='Path to the Tweezer model file')
+    parser.add_argument(
+        "--model-path", required=True, help="Path to the Tweezer model file"
+    )
     # Binary locations argument (accepts multiple values)
-    parser.add_argument('--train', nargs='+', help='List of binary locations to train/extend training off')
+    parser.add_argument(
+        "--train",
+        nargs="+",
+        help="List of binary locations to train/extend training off",
+    )
 
     # Create a mutually exclusive group for --function and --binary
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--single-function', help='Path to a decompiled C file for analysis')
-    group.add_argument('--binary', help='Path to binary to produce function name map from')
+    group.add_argument(
+        "--single-function", help="Path to a decompiled C file for analysis"
+    )
+    group.add_argument(
+        "--binary", help="Path to binary to produce function name map from"
+    )
 
     args = parser.parse_args()
 
@@ -102,29 +126,33 @@ def entry():
 
     # compare a decompiled function with vectors
     if args.single_function:
-
         if not Path(args.single_function).is_file():
-            raise Exception("Provided function file '{}' is not a file or does not exist, please provide a valid "
-                            "function file that contains a functions decompilation!")
+            raise Exception(
+                "Provided function file '{}' is not a file or does not exist, please provide a valid "
+                "function file that contains a functions decompilation!"
+            )
 
         if not Path(args.model).is_file():
             raise Exception(
                 "Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve "
-                "the example model from Github.")
+                "the example model from Github."
+            )
 
         tweezer = Tweezer(args.model_path)
         print(tweezer.find_closest_functions(args.function))
 
     # Build a reference map of all functions in a binary
     elif args.binary:
-
         if not Path(args.binary).is_file():
-            raise Exception("Provided binary '{}' is not a file or does not exist, please provide a valid binary that "
-                            "is decompilable by Ghidra!")
+            raise Exception(
+                "Provided binary '{}' is not a file or does not exist, please provide a valid binary that "
+                "is decompilable by Ghidra!"
+            )
 
         if not Path(args.model_path).is_file():
             raise Exception(
-                "Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve the example model from Github.")
+                "Model file at '{}' does not exist, please train a model first with the '--train' command or retrieve the example model from Github."
+            )
 
         function_map = {}
         tweezer = Tweezer(args.model_path)
@@ -142,7 +170,10 @@ def entry():
                         if "function_name" in closest_function[0]:
                             closest_function_name = closest_function[0]["function_name"]
                             closest_function_binary = closest_function[0]["binary_name"]
-                            function_map[function_name] = [closest_function_name, closest_function_binary]
+                            function_map[function_name] = [
+                                closest_function_name,
+                                closest_function_binary,
+                            ]
                 else:
                     print("Invalid closest function returned!")
 
@@ -159,5 +190,5 @@ def entry():
         tweezer.train(list_of_binary_folders)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     entry()

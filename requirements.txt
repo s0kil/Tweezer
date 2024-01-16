@@ -6,3 +6,4 @@ tqdm
 tensorflow
 tqdm
 scipy
+ghidrecomp
